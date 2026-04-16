@@ -1,0 +1,14 @@
+src_ip,alert,count,severity,risk_score
+192.168.1.206,Port Scan,11,High,92
+192.168.1.25,Brute Force Attempt,5,High,80
+192.168.1.105,Suspicious Port Activity,1,High,72
+192.168.1.38,Suspicious Port Activity,1,High,72
+192.168.1.57,Suspicious Port Activity,1,High,72
+192.168.1.83,Suspicious Port Activity,1,High,72
+192.168.1.61,Suspicious Port Activity,1,High,72
+192.168.1.114,DNS Spike,10,Medium,70
+192.168.1.105,Large Packet Anomaly,1,Low,32
+192.168.1.38,Large Packet Anomaly,1,Low,32
+192.168.1.57,Large Packet Anomaly,1,Low,32
+192.168.1.61,Large Packet Anomaly,1,Low,32
+192.168.1.83,Large Packet Anomaly,1,Low,32
