@@ -4,28 +4,38 @@ import time
 from datetime import datetime
 from detector import run_all_detections
 
-# attack state variables
+# -------------------------------
+# GLOBAL VARIABLES (attack state)
+# -------------------------------
 attack_mode = None
 attack_counter = 0
 attacker_ip = None
 target_ip = None
 
 
+# -------------------------------
+# GENERATE ONE PACKET (ROW)
+# -------------------------------
 def generate_row():
     global attack_mode, attack_counter, attacker_ip, target_ip
 
-    # randomly trigger attack
+    # randomly START an attack
     if attack_mode is None and random.random() < 0.1:
         attack_mode = random.choice(["port_scan", "brute_force", "dns_spike"])
         attack_counter = 0
         attacker_ip = f"192.168.1.{random.randint(50, 200)}"
         target_ip = f"192.168.1.{random.randint(1, 50)}"
 
-        print(f"\n ATTACK STARTED: {attack_mode.upper()} from {attacker_ip}")
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}]  ATTACK STARTED → {attack_mode.upper()} | Attacker: {attacker_ip}")
 
-    # PORT SCAN
+    # -------------------------------
+    # PORT SCAN ATTACK
+    # -------------------------------
     if attack_mode == "port_scan":
         attack_counter += 1
+
+        print(f"   → Port Scan Packet #{attack_counter} targeting multiple IPs")
+
         row = {
             "timestamp": datetime.now(),
             "src_ip": attacker_ip,
@@ -35,13 +45,21 @@ def generate_row():
             "dst_port": 22,
             "packet_size": random.randint(60, 120)
         }
+
+        # stop attack after some packets
         if attack_counter > 10:
             attack_mode = None
+
         return row
 
-    # BRUTE FORCE
+    # -------------------------------
+    # BRUTE FORCE ATTACK
+    # -------------------------------
     if attack_mode == "brute_force":
         attack_counter += 1
+
+        print(f"   → Brute Force Attempt #{attack_counter} on {target_ip}")
+
         row = {
             "timestamp": datetime.now(),
             "src_ip": attacker_ip,
@@ -51,13 +69,20 @@ def generate_row():
             "dst_port": 22,
             "packet_size": random.randint(60, 120)
         }
+
         if attack_counter > 8:
             attack_mode = None
+
         return row
 
-    # DNS SPIKE
+    # -------------------------------
+    # DNS SPIKE ATTACK
+    # -------------------------------
     if attack_mode == "dns_spike":
         attack_counter += 1
+
+        print(f"   → DNS Request Spike #{attack_counter}")
+
         row = {
             "timestamp": datetime.now(),
             "src_ip": attacker_ip,
@@ -67,11 +92,15 @@ def generate_row():
             "dst_port": 53,
             "packet_size": random.randint(60, 100)
         }
+
         if attack_counter > 12:
             attack_mode = None
+
         return row
 
+    # -------------------------------
     # NORMAL TRAFFIC
+    # -------------------------------
     src_ip = f"192.168.1.{random.randint(1, 255)}"
 
     if random.random() < 0.5:
@@ -104,31 +133,46 @@ def generate_row():
         }
 
 
+# -------------------------------
+# LIVE MONITOR (MAIN LOOP)
+# -------------------------------
 def live_monitor():
     print(" Live Traffic Monitoring Started...\n")
 
-    data = []
-    seen_alerts = set()
+    data = []              # sliding window of packets
+    seen_alerts = set()   # to avoid duplicate alerts
 
     while True:
         row = generate_row()
         data.append(row)
 
+        # keep last 30 packets only
         if len(data) > 30:
             data.pop(0)
 
         df = pd.DataFrame(data)
 
-        print(f"New Packet: {row['src_ip']} → {row['dst_ip']} ({row['protocol']})")
+        # print packet
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Packet → {row['src_ip']} → {row['dst_ip']} ({row['protocol']})")
 
+        # run detection
         alerts = run_all_detections(df)
-        seen_alerts = set()
+
+        # print only NEW alerts (no duplicates)
         if not alerts.empty:
-            print("\n ALERTS DETECTED:")
-            print(alerts.head())
+            for _, alert_row in alerts.iterrows():
+
+                alert_key = (alert_row["src_ip"], alert_row["alert"])
+
+                if alert_key not in seen_alerts:
+                    print(f"\n ALERT → {alert_row['alert']} | Source: {alert_row['src_ip']} | Risk: {alert_row['risk_score']}")
+                    seen_alerts.add(alert_key)
 
         time.sleep(1)
 
 
+# -------------------------------
+# RUN
+# -------------------------------
 if __name__ == "__main__":
     live_monitor()

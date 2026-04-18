@@ -1,111 +1,64 @@
-import pandas as pd
+import csv
 import random
 from datetime import datetime, timedelta
 
-rows = []
+# CONFIG
+NUM_ROWS = 5000   # increase to 10000+ if needed
+START_DATE = datetime(2026, 4, 13)
+DAYS = 5  # 13 → 17
 
-# random start date between April 10–20
-base_date = datetime(2026, 4, random.randint(10, 20), random.randint(0, 23), random.randint(0, 59), 0)
+protocols = ["TCP", "DNS", "HTTP"]
+ips = [f"192.168.1.{i}" for i in range(1, 255)]
 
-# helper function to generate random IP
-def random_ip():
-    return f"192.168.1.{random.randint(2, 254)}"
+def random_timestamp():
+    day_offset = random.randint(0, DAYS - 1)
+    base_date = START_DATE + timedelta(days=day_offset)
 
-# helper function to generate random external IP
-def external_ip():
-    return f"{random.randint(20, 200)}.{random.randint(1, 255)}.{random.randint(1, 255)}.{random.randint(1, 255)}"
+    random_time = timedelta(
+        hours=random.randint(0, 23),
+        minutes=random.randint(0, 59),
+        seconds=random.randint(0, 59)
+    )
 
+    return (base_date + random_time).strftime("%Y-%m-%d %H:%M:%S")
 
-# 🔹 NORMAL TRAFFIC
-for i in range(30):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=random.randint(1, 500)),
-        "src_ip": random_ip(),
-        "dst_ip": random.choice(["8.8.8.8", "8.8.4.4", "1.1.1.1"]),
-        "protocol": "DNS",
-        "src_port": random.randint(50000, 65000),
-        "dst_port": 53,
-        "packet_size": random.randint(60, 120)
-    })
+def generate_row():
+    protocol = random.choice(protocols)
 
+    src_ip = random.choice(ips)
+    dst_ip = random.choice(ips)
 
-# 🔹 HTTP TRAFFIC
-for i in range(25):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=random.randint(500, 1000)),
-        "src_ip": random_ip(),
-        "dst_ip": "192.168.1.1",
-        "protocol": "HTTP",
-        "src_port": random.randint(50000, 65000),
-        "dst_port": 80,
-        "packet_size": random.randint(200, 600)
-    })
+    if protocol == "DNS":
+        src_port = random.randint(1024, 65535)
+        dst_port = 53
+    elif protocol == "HTTP":
+        src_port = random.randint(1024, 65535)
+        dst_port = 80
+    else:
+        src_port = random.randint(1024, 65535)
+        dst_port = random.choice([22, 80, 443, 8080])
 
+    packet_size = random.randint(40, 1500)
 
-# 🔹 PORT SCAN
-scanner_ip = random_ip()
-for i in range(random.randint(6, 10)):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=1000 + i),
-        "src_ip": scanner_ip,
-        "dst_ip": random_ip(),
-        "protocol": "TCP",
-        "src_port": random.randint(40000, 50000),
-        "dst_port": 22,
-        "packet_size": random.randint(90, 150)
-    })
+    return [
+        random_timestamp(),
+        src_ip,
+        dst_ip,
+        protocol,
+        src_port,
+        dst_port,
+        packet_size
+    ]
 
+# WRITE CSV
+with open("data/mixed_traffic.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow([
+        "timestamp", "src_ip", "dst_ip",
+        "protocol", "src_port", "dst_port", "packet_size"
+    ])
 
-# 🔹 DNS SPIKE
-dns_attacker = random_ip()
-for i in range(random.randint(8, 15)):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=1200 + i),
-        "src_ip": dns_attacker,
-        "dst_ip": random.choice(["8.8.8.8", "1.1.1.1"]),
-        "protocol": "DNS",
-        "src_port": random.randint(52000, 65000),
-        "dst_port": 53,
-        "packet_size": random.randint(70, 110)
-    })
+    for _ in range(NUM_ROWS):
+        writer.writerow(generate_row())
 
-
-# 🔹 SUSPICIOUS PORT ACTIVITY
-for i in range(5):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=1500 + i),
-        "src_ip": random_ip(),
-        "dst_ip": external_ip(),
-        "protocol": "TCP",
-        "src_port": random.randint(50000, 65000),
-        "dst_port": random.choice([4444, 5555, 6666]),
-        "packet_size": random.randint(650, 900)
-    })
-
-
-# 🔹 BRUTE FORCE
-attacker = random_ip()
-victim = random_ip()
-
-for i in range(random.randint(5, 8)):
-    rows.append({
-        "timestamp": base_date + timedelta(seconds=1800 + i),
-        "src_ip": attacker,
-        "dst_ip": victim,
-        "protocol": "TCP",
-        "src_port": random.randint(60000, 65000),
-        "dst_port": 22,
-        "packet_size": random.randint(80, 120)
-    })
-
-
-# convert to dataframe
-df = pd.DataFrame(rows)
-
-# shuffle rows (VERY IMPORTANT — makes it realistic)
-df = df.sample(frac=1).reset_index(drop=True)
-
-# save file
-df.to_csv("data/mixed_traffic.csv", index=False)
-
-print("✅ Random realistic dataset generated: data/mixed_traffic.csv")
+print("Dataset generated successfully.")t
