@@ -40,21 +40,6 @@ The system generates realistic multi-day traffic:
 
 ---
 
-## Live Detection in Action
-
-### Dataset (Multi-Day Traffic)
-![Dataset](screenshots/01_dataset_multi_day_traffic.png)
-
-### DNS Spike Detection
-![DNS Spike](screenshots/03_live_detection_dns_spike.png)
-
-### Port Scan & Brute Force Detection
-![Attacks](screenshots/04_live_detection_portscan_bruteforce.png)
-
-### Live Attack Stream
-![Live Stream](screenshots/05_live_attack_status_stream.png)
-
----
 
 ## How It Works
 
